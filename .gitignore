@@ -9,6 +9,7 @@ data/
 
 .venv
 venv
+*.pkl
 .idea
 **/artifacts/
 **/models/

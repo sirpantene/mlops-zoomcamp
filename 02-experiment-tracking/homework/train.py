@@ -2,6 +2,7 @@ import argparse
 import os
 import pickle
 
+import mlflow
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
@@ -33,4 +34,9 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    run(args.data_path)
+    mlflow.set_tracking_uri("http://mlflow_server:5000")
+    mlflow.set_experiment("02-experiment-tracking")
+    mlflow.sklearn.autolog()
+
+    with mlflow.start_run():
+        run(args.data_path)

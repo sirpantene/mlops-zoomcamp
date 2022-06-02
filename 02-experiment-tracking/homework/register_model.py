@@ -13,7 +13,7 @@ from sklearn.metrics import mean_squared_error
 HPO_EXPERIMENT_NAME = "random-forest-hyperopt"
 EXPERIMENT_NAME = "random-forest-best-models"
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri("http://mlflow_server:5000")
 mlflow.set_experiment(EXPERIMENT_NAME)
 mlflow.sklearn.autolog()
 
@@ -65,10 +65,17 @@ def run(data_path, log_top):
 
     # select the model with the lowest test RMSE
     experiment = client.get_experiment_by_name(EXPERIMENT_NAME)
-    # best_run = client.search_runs( ...  )[0]
+    best_run = client.search_runs(
+        experiment_ids=experiment.experiment_id,
+        order_by=["metrics.test_rmse ASC"]
+    )[0]
+    print(best_run)
 
     # register the best model
-    # mlflow.register_model( ... )
+    # mlflow.register_model(
+    #     model_uri=f"runs:/{best_run.info.run_id}/model",
+    #     name='rf-regressor'
+    # )
 
 
 if __name__ == '__main__':
@@ -87,4 +94,4 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    run(args.data_path, args.top_n)
+    # run(args.data_path, args.top_n)
