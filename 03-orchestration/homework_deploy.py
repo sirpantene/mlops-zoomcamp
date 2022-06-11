@@ -12,7 +12,9 @@ import mlflow
 
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
-
+from prefect.flow_runners import SubprocessFlowRunner
+from prefect.deployments import DeploymentSpec
+from prefect.orion.schemas.schedules import CronSchedule
 
 @task
 def get_paths(date):
@@ -44,17 +46,16 @@ def prepare_features(df, categorical, train=True):
         print(f"The mean duration of training is {mean_duration}")
     else:
         print(f"The mean duration of validation is {mean_duration}")
-    
+
     df[categorical] = df[categorical].fillna(-1).astype('int').astype('str')
     return df
 
 
 @task
 def train_model(df, categorical):
-
     train_dicts = df[categorical].to_dict(orient='records')
     dv = DictVectorizer()
-    X_train = dv.fit_transform(train_dicts) 
+    X_train = dv.fit_transform(train_dicts)
     y_train = df.duration.values
 
     print(f"The shape of X_train is {X_train.shape}")
@@ -72,7 +73,7 @@ def train_model(df, categorical):
 @task
 def run_model(df, categorical, dv, lr):
     val_dicts = df[categorical].to_dict(orient='records')
-    X_val = dv.transform(val_dicts) 
+    X_val = dv.transform(val_dicts)
     y_pred = lr.predict(X_val)
     y_val = df.duration.values
 
@@ -110,5 +111,13 @@ def main(date=None):
         mlflow.log_artifact(dv_path, artifact_path="model")
 
 
-if __name__ == "__main__":
-    main(date="2021-08-15")
+schedule = CronSchedule(cron="0 9 15 * *")
+
+
+DeploymentSpec(
+    flow=main,
+    name="model_training",
+    schedule=schedule,
+    flow_runner=SubprocessFlowRunner(),
+    tags=["ml"]
+)
